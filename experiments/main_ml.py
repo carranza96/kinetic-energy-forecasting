@@ -8,18 +8,22 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import ParameterGrid
 from sklearn.multioutput import MultiOutputRegressor
+from sklearn.preprocessing import MinMaxScaler
 from xgboost import XGBRegressor
 
 from utils import data, metrics
+
+DATA_PATH = "./data"
+OUTPUT_PATH = "./results"
+N_JOBS = -1
 
 FREQ = "1min"
 N_DAYS_TEST = 10
 PAST_HISTORY = 240
 FORECASTING_HORIZON = 60
-SCALER = "MinMax"
-DATA_PATH = "./data"
-OUTPUT_PATH = "./results"
-N_JOBS = -1
+
+SCALER = MinMaxScaler().fit([[130.],[260.]])
+FIT_SCALER = False
 
 
 def RandomForest():
@@ -54,7 +58,7 @@ def preprocess_data(df_):
     df = df_.copy()
     end_date = df.index.max()
     df = data.transform_to_evenly_spaced(df, freq=FREQ)
-    df, scaler = data.scale_features(df, scaler=SCALER, n_days_test=N_DAYS_TEST)
+    df, scaler = data.scale_features(df, scaler=SCALER, fit_scaler=FIT_SCALER, n_days_test=N_DAYS_TEST)
     df = data.build_features(df, past_history=PAST_HISTORY, forecasting_horizon=FORECASTING_HORIZON)
     df_train, df_test = data.split_train_test(df, end_date=end_date, n_days_test=N_DAYS_TEST)
     X_train, y_train = data.split_input_output(df_train)
@@ -161,7 +165,7 @@ for filename in files:
             train_parameters = {
                 "Forecasting horizon": FORECASTING_HORIZON,
                 "Past history": PAST_HISTORY,
-                "Scaler": SCALER,
+                "Scaler": SCALER if type(SCALER) is str else type(SCALER).__name__,
                 "Data frequency": FREQ,
                 "Number days test": N_DAYS_TEST,
             }

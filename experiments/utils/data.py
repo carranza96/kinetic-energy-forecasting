@@ -1,5 +1,6 @@
 import datetime as dt
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.base import BaseEstimator
 
@@ -16,6 +17,8 @@ def read_dataframe(filename):
     df[VALUE_COL] = df[VALUE_COL].astype("float")
     df[INDEX_COL] = pd.to_datetime(df[INDEX_COL])
     df.index = df.pop(INDEX_COL)
+    df[df[VALUE_COL]==0.] = np.nan
+    df = df.dropna()
     return df
 
 
@@ -57,7 +60,7 @@ def split_train_test(df, end_date=None, n_days_test=10):
 
 
 def scale_features(
-    df_, scaler="MinMax", end_date=None, n_days_test=10, value_column=VALUE_COL
+    df_, scaler="MinMaxScaler", end_date=None, n_days_test=10, fit_scaler=True, value_column=VALUE_COL
 ):
     df = df_.copy()
 
@@ -65,9 +68,9 @@ def scale_features(
     if isinstance(scaler, BaseEstimator):
         sc = scaler
     if isinstance(scaler, str):
-        if scaler.upper() == "MINMAX":
+        if scaler.upper() == "MINMAXSCALER":
             sc = MinMaxScaler()
-        elif scaler.upper() == "STANDARD":
+        elif scaler.upper() == "STANDARDSCALER":
             sc = StandardScaler()
     if sc == None:
         raise ValueError(
@@ -77,8 +80,9 @@ def scale_features(
     if end_date == None:
         end_date = df.index.max()
 
-    start_test = end_date - dt.timedelta(days=n_days_test)
-    sc = sc.fit(df[df.index <= start_test][[value_column]])
+    if fit_scaler:
+        start_test = end_date - dt.timedelta(days=n_days_test)
+        sc = sc.fit(df[df.index <= start_test][[value_column]])
 
     df[[value_column]] = sc.transform(df[[value_column]])
     return df, sc
