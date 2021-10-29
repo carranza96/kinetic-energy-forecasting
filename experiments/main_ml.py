@@ -10,6 +10,7 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import MinMaxScaler
 from xgboost import XGBRegressor
+from sklearn import linear_model
 
 from utils import data, metrics
 
@@ -34,22 +35,29 @@ def XGBoost():
     return MultiOutputRegressor(XGBRegressor())
 
 
+def LR():
+    return linear_model.LinearRegression()
+
+
 MODELS = {
-    RandomForest: {
-        "n_estimators": [100, 500],
-        "max_depth": [10, 100, None],
-        "min_samples_split": [2, 10],
-        "min_samples_leaf": [1, 4],
-        "bootstrap": [True, False],
+    # RandomForest: {
+    #     "n_estimators": [100, 500],
+    #     "max_depth": [10, 100, None],
+    #     "min_samples_split": [2, 10],
+    #     "min_samples_leaf": [1, 4],
+    #     "bootstrap": [True, False],
+    #     "n_jobs": [N_JOBS],
+    # },
+    # XGBoost: {
+    #     "estimator__learning_rate": [0.05, 0.10, 0.25],
+    #     "estimator__max_depth": [3, 10],
+    #     "estimator__min_child_weight": [1, 5],
+    #     "estimator__gamma": [0.1, 0.4],
+    #     "estimator__colsample_bytree": [0.3, 0.7],
+    #     "estimator__n_jobs": [N_JOBS],
+    # },
+    LR: {
         "n_jobs": [N_JOBS],
-    },
-    XGBoost: {
-        "estimator__learning_rate": [0.05, 0.10, 0.25],
-        "estimator__max_depth": [3, 10],
-        "estimator__min_child_weight": [1, 5],
-        "estimator__gamma": [0.1, 0.4],
-        "estimator__colsample_bytree": [0.3, 0.7],
-        "estimator__n_jobs": [N_JOBS],
     }
 }
 
