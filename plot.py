@@ -4,12 +4,17 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import json
 
-
-res = pd.read_csv("results/results.csv")
+# res = pd.read_csv("results/results.csv")
 print()
 
 def error_plots():
+    res = pd.read_csv("results/results.csv")
+
+    res = res[res["Model architecture"]=="LR"]
+    res["key"] = res.apply(lambda x: x["Model architecture"] + " - PH:" + str(json.loads(x["Other params"])["Past history"]) 
+                                           +  " - FH:" + str(json.loads(x["Other params"])["Forecasting horizon"]), axis=1)
     plt.figure()
     wape = sns.boxplot(x="Dataset", hue="Model architecture", y="WAPE", data=res)
     wape.figure.savefig("wape.png")
@@ -35,9 +40,9 @@ def error_plots():
     mae.figure.savefig("mae.png")
     
     plt.figure(figsize=(15,5))
-    plt.ylim(0,4)
-    mae = sns.boxplot(x="Dataset", hue="Model architecture", y="MAE", data=res)
-    mae.figure.savefig("mae_ylimit.png")
+    # mae = sns.pointplot(x="Dataset", hue="key", y="MAE", data=res, join=False)
+    mae = sns.barplot(x="Dataset", hue="key", y="MAE", data=res)
+    mae.figure.savefig("mae2.png")
     
     
 error_plots()
