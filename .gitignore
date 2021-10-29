@@ -128,4 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-results/FH*
+results/*
+*.png
+launch.json

@@ -10,7 +10,7 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import MinMaxScaler
 
 from utils import data, metrics
-from utils.models import CNN, LSTM, MLP, XGBoost, RandomForest
+from utils.models import CNN, LSTM, MLP, XGBoost, RandomForest, LR
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./results"
@@ -26,6 +26,7 @@ FIT_SCALER = False
 
 BATCH_SIZE = [64, 256]
 EPOCHS = [1, 10, 50]
+
 
 MODELS = {
     MLP: {

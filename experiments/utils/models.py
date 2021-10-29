@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from xgboost import XGBRegressor
 
 class Model(ABC):
@@ -182,3 +183,7 @@ def RandomForest():
 
 def XGBoost():
     return MultiOutputRegressor(XGBRegressor())
+
+
+def LR():
+    return LinearRegression()
