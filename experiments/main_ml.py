@@ -5,13 +5,12 @@ from pathlib import Path
 from tqdm import tqdm
 import pandas as pd
 
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import ParameterGrid
-from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import MinMaxScaler
-from xgboost import XGBRegressor
 
 from utils import data, metrics
+from utils.models import CNN, LSTM, MLP, XGBoost, RandomForest
 
 DATA_PATH = "./data"
 OUTPUT_PATH = "./results"
@@ -25,24 +24,67 @@ FORECASTING_HORIZON = 60
 SCALER = MinMaxScaler().fit([[130.],[260.]])
 FIT_SCALER = False
 
-
-def RandomForest():
-    return RandomForestRegressor()
-
-
-def XGBoost():
-    return MultiOutputRegressor(XGBRegressor())
-
+BATCH_SIZE = [64, 256]
+EPOCHS = [1, 10, 50]
 
 MODELS = {
-    RandomForest: {
-        "n_estimators": [100, 500],
-        "max_depth": [10, 100, None],
-        "min_samples_split": [2, 10],
-        "min_samples_leaf": [1, 4],
-        "bootstrap": [True, False],
-        "n_jobs": [N_JOBS],
+    MLP: {
+        "hidden_layers": [
+                [8],
+                [8, 16],
+                [16, 8],
+                [8, 16, 32],
+                [32, 16, 8],
+                [8, 16, 32, 16, 8],
+                [32],
+                [32, 64],
+                [64, 32],
+                [32, 64, 128],
+                [128, 64, 32],
+                [32, 64, 128, 64, 32]
+        ],
+        'input_shape':None,
+        'output_size':None,
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
     },
+    CNN: {
+        "conv_blocks": [
+                [[32, 3, 2]],
+                [[32, 5, 2], [32, 3, 2]],
+                [[32, 7, 2], [32, 5, 2], [32, 2, 2]],
+                [[32, 3, 0]],
+                [[32, 5, 0], [32, 3, 0]],
+                [[32, 7, 0], [32, 5, 0], [32, 2, 0]],
+                [[64, 3, 2]],
+                [[64, 5, 2], [64, 3, 2]],
+                [[64, 7, 2], [64, 5, 2], [64, 2, 2]],
+                [[64, 3, 0]],
+                [[64, 5, 0], [64, 3, 0]],
+                [[64, 7, 0], [64, 5, 0], [64, 2, 0]],
+                [[128, 3, 2]],
+                [[128, 5, 2], [128, 3, 2]],
+                [[128, 7, 2], [128, 5, 2], [128, 2, 2]],
+                [[128, 3, 0]],
+                [[128, 5, 0], [128, 3, 0]],
+                [[128, 7, 0], [128, 5, 0], [128, 2, 0]]
+        ],
+
+        'input_shape':None,
+        'output_size':None,
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
+    },
+    LSTM: {
+        "layers": [1, 2, 4],
+        "units": [32, 64, 128],
+        "return_sequence": [True, False],
+        'input_shape':None,
+        'output_size':None,
+        "batch_size": BATCH_SIZE,
+        "epochs": EPOCHS,
+    },
+    LinearRegression: {"n_jobs": [N_JOBS]},
     XGBoost: {
         "estimator__learning_rate": [0.05, 0.10, 0.25],
         "estimator__max_depth": [3, 10],
@@ -50,6 +92,14 @@ MODELS = {
         "estimator__gamma": [0.1, 0.4],
         "estimator__colsample_bytree": [0.3, 0.7],
         "estimator__n_jobs": [N_JOBS],
+    },
+    RandomForest: {
+        "n_estimators": [100, 500],
+        "max_depth": [10, 100, None],
+        "min_samples_split": [2, 10],
+        "min_samples_leaf": [1, 4],
+        "bootstrap": [True, False],
+        "n_jobs": [N_JOBS],
     }
 }
 
@@ -146,6 +196,11 @@ for filename in files:
     for model_func in MODELS:
         grid = ParameterGrid(MODELS[model_func])
         for idx, params in tqdm(list(enumerate(grid)), desc=model_func.__name__):
+            if 'input_shape' in params:
+                params['input_shape'] = (*X_train.shape, 1)
+            if 'output_size' in params:
+                params['output_size'] = y_train.shape[1]
+
             model = model_func()
             model.set_params(**params)
 
