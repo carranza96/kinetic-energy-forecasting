@@ -130,4 +130,5 @@ dmypy.json
 
 results/*
 *.png
+*.html
 launch.json
