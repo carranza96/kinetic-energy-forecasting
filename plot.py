@@ -19,6 +19,8 @@ from bokeh.models.widgets import Panel, Tabs
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Colorblind8
 
+from experiments.utils.metrics import METRICS
+
 PALETTE = Colorblind8
 
 
@@ -142,20 +144,26 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
             ].copy()
             if not len(filtered_result):
                 # Model not present for this dataset - Fill with NaNs
-                data[ds][model_arch]["Metric"] = "None"
+                data[ds][model_arch]["Metric Mean"] = "None"
                 nan_pred = ["NaN" for _ in range(len(data[ds]["y"]))]
                 for i in range(fh):
                     data[ds][model_arch][f"t{i+1}"] = nan_pred
+                    data[ds][model_arch][f"Metric t{i+1}"] = "None"
                 data[ds][model_arch]["Mean"] = nan_pred
             else:
                 model = filtered_result["Model"].values[0]
                 # Save error value
-                data[ds][model_arch]["Metric"] = filtered_result[metric].values[0]
+                data[ds][model_arch]["Metric Mean"] = filtered_result[metric].values[0]
 
                 # save prediction for each timestep by forecasting horizon
                 preds = pd.read_csv(f"{results_path}/{problem_conf}/{ds}/o_{model}.csv")
                 for i in range(fh):
-                    data[ds][model_arch][f"t{i+1}"] = ["NaN"] * i + preds[str(i)].tolist() + ["NaN"] * (fh - i - 1)
+                    fh_preds = ["NaN"] * i + preds[str(i)].tolist() + ["NaN"] * (fh - i - 1)
+                    data[ds][model_arch][f"t{i+1}"] = fh_preds
+                    # Save metric by forecasting horizon
+                    j = None if -fh + i + 1 == 0 else -fh + i + 1
+                    fh_error = METRICS[metric.lower()](data[ds]["y"][i:j], preds[str(i)])
+                    data[ds][model_arch][f"Metric t{i+1}"] = "{:.8f}".format(fh_error)
                 # get average prediction for each timestep
                 list_preds = [list(data[ds][model_arch][f"t{i+1}"]) for i in range(fh)]
                 data[ds][model_arch]["Mean"] = [
@@ -184,7 +192,8 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
     # Create legend
     legend_labels = ["GT"] + [
-        f"{model} ({metric}: {data[default_dataset][model]['Metric']})" for model in model_architetures
+        f"{model} ({metric}: {data[default_dataset][model][f'Metric {default_pred_horizon}']})"
+        for model in model_architetures
     ]
     legend_items = list(zip(legend_labels, [[l] for l in line_ls]))
     legend = Legend(items=legend_items, location="top")
@@ -217,7 +226,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
         for (let i = 0; i < models.length; i++) {
             live_data[models[i]] = data[dataset_select.value][models[i]][pred_horizon_select.value];
-            model_legends[i].label.value = model_legends[i].label.value.split('(')[0] + '(' + metric + ': ' + data[dataset_select.value][models[i]]['Metric'] + ')';
+            model_legends[i].label.value = model_legends[i].label.value.split('(')[0] + '(' + metric + ': ' + data[dataset_select.value][models[i]]['Metric '+pred_horizon_select.value] + ')';
             
             if (model_select.value.includes(models[i])){
                 model_lines[i].visible = true;
@@ -290,4 +299,9 @@ if __name__ == "__main__":
         models=["LinearRegression_0", "XGBoost_0"],
         zoom=(6000, 8000),
     )
-    plot_best_predictions(results_path="./results", metric="MAE", fh_ph_list=["FH15-PH60", "FH240-PH960"], models=None)
+    plot_best_predictions(
+        results_path="./results", 
+        metric="MAE", 
+        fh_ph_list=["FH60-PH240", "FH240-PH960"], # None or [] will take all possible options 
+        models=None # None or [] will take all models 
+    )
