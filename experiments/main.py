@@ -44,8 +44,8 @@ MODELS = {
                 [128, 64, 32],
                 [32, 64, 128, 64, 32]
         ],
-        'input_shape':None,
-        'output_size':None,
+        'input_shape':[None],
+        'output_size':[None],
         "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
     },
@@ -71,8 +71,8 @@ MODELS = {
                 [[128, 7, 0], [128, 5, 0], [128, 2, 0]]
         ],
 
-        'input_shape':None,
-        'output_size':None,
+        'input_shape':[None],
+        'output_size':[None],
         "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
     },
@@ -80,8 +80,8 @@ MODELS = {
         "layers": [1, 2, 4],
         "units": [32, 64, 128],
         "return_sequence": [True, False],
-        'input_shape':None,
-        'output_size':None,
+        'input_shape':[None],
+        'output_size':[None],
         "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
     },
