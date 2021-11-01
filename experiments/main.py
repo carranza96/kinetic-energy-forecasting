@@ -79,7 +79,7 @@ MODELS = {
     LSTM: {
         "layers": [1, 2, 4],
         "units": [32, 64, 128],
-        "return_sequences": [True, False],
+        "return_sequence": [True, False],
         'input_shape':[None],
         'output_size':[None],
         "batch_size": BATCH_SIZE,
