@@ -53,7 +53,7 @@ class Model(ABC):
     def predict(self, x_):
         x = np.expand_dims(x_, axis=-1)
         self.assert_model_built()
-        return self._model(x, training=False)
+        return self._model.predict(x, batch_size=self._batch_size)
 
 
 class MLP(Model):
@@ -93,7 +93,7 @@ class LSTM(Model):
         units=64,
         layers=2,
         recurrent_dropout=0,
-        return_sequences=False,
+        return_sequence=False,
         dense_layers=[],
         dense_dropout=0,
     ):
@@ -101,7 +101,7 @@ class LSTM(Model):
 
         inputs = tf.keras.layers.Input(shape=input_shape[-2:])
         # LSTM layers
-        return_sequences_tmp = return_sequences if len(recurrent_units) == 1 else True
+        return_sequences_tmp = return_sequence if len(recurrent_units) == 1 else True
         x = tf.keras.layers.LSTM(
             recurrent_units[0],
             return_sequences=return_sequences_tmp,
@@ -109,13 +109,13 @@ class LSTM(Model):
         )(inputs)
         for i, u in enumerate(recurrent_units[1:]):
             return_sequences_tmp = (
-                return_sequences if i == len(recurrent_units) - 2 else True
+                return_sequence if i == len(recurrent_units) - 2 else True
             )
             x = tf.keras.layers.LSTM(
                 u, return_sequences=return_sequences_tmp, dropout=recurrent_dropout
             )(x)
         # Dense layers
-        if return_sequences:
+        if return_sequence:
             x = tf.keras.layers.Flatten()(x)
         for hidden_units in dense_layers:
             x = tf.keras.layers.Dense(hidden_units)(x)
