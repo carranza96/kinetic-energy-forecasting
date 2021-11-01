@@ -11,9 +11,10 @@ from sklearn.preprocessing import MinMaxScaler
 
 from utils import data, metrics
 from utils.models import CNN, LSTM, MLP, XGBoost, RandomForest, LR
+from sklearn.tree import DecisionTreeRegressor
 
 DATA_PATH = "./data"
-OUTPUT_PATH = "./results2"
+OUTPUT_PATH = "./results3"
 N_JOBS = -1
 
 FREQ = "1min"
@@ -25,21 +26,13 @@ SCALER = MinMaxScaler().fit([[130.],[260.]])
 FIT_SCALER = False
 
 BATCH_SIZE = [64, 256]
-EPOCHS = [1, 10, 50]
+EPOCHS = [25]
 
 
 MODELS = {
     MLP: {
         "hidden_layers": [
-                [8],
-                [8, 16],
-                [16, 8],
                 [8, 16, 32],
-                [32, 16, 8],
-                [8, 16, 32, 16, 8],
-                [32],
-                [32, 64],
-                [64, 32],
                 [32, 64, 128],
                 [128, 64, 32],
                 [32, 64, 128, 64, 32]
@@ -52,23 +45,10 @@ MODELS = {
     CNN: {
         "conv_blocks": [
                 [[32, 3, 2]],
-                [[32, 5, 2], [32, 3, 2]],
-                [[32, 7, 2], [32, 5, 2], [32, 2, 2]],
-                [[32, 3, 0]],
-                [[32, 5, 0], [32, 3, 0]],
                 [[32, 7, 0], [32, 5, 0], [32, 2, 0]],
-                [[64, 3, 2]],
-                [[64, 5, 2], [64, 3, 2]],
                 [[64, 7, 2], [64, 5, 2], [64, 2, 2]],
-                [[64, 3, 0]],
-                [[64, 5, 0], [64, 3, 0]],
-                [[64, 7, 0], [64, 5, 0], [64, 2, 0]],
-                [[128, 3, 2]],
-                [[128, 5, 2], [128, 3, 2]],
                 [[128, 7, 2], [128, 5, 2], [128, 2, 2]],
-                [[128, 3, 0]],
-                [[128, 5, 0], [128, 3, 0]],
-                [[128, 7, 0], [128, 5, 0], [128, 2, 0]]
+
         ],
 
         'input_shape':[None],
@@ -77,8 +57,8 @@ MODELS = {
         "epochs": EPOCHS,
     },
     LSTM: {
-        "layers": [1, 2, 4],
-        "units": [32, 64, 128],
+        "layers": [2],
+        "units": [32, 64],
         "return_sequences": [True, False],
         'input_shape':[None],
         'output_size':[None],
@@ -86,6 +66,9 @@ MODELS = {
         "epochs": EPOCHS,
     },
     LinearRegression: {"n_jobs": [N_JOBS]},
+    DecisionTreeRegressor: {
+        "max_depth": [10, 100, None],
+        },
     XGBoost: {
         "estimator__learning_rate": [0.05, 0.10, 0.25],
         "estimator__max_depth": [3, 10],

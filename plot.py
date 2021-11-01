@@ -10,9 +10,11 @@ import json
 print()
 
 def error_plots():
-    res = pd.read_csv("results/results.csv")
+    res = pd.read_csv("results2/results.csv")
 
-    res = res[res["Model architecture"]=="LR"]
+    # res = res[res["Model architecture"]=="LR"]
+    res = res[res["Model params"].str.contains('"epochs": 50')]
+
     res["key"] = res.apply(lambda x: x["Model architecture"] + " - PH:" + str(json.loads(x["Other params"])["Past history"]) 
                                            +  " - FH:" + str(json.loads(x["Other params"])["Forecasting horizon"]), axis=1)
     plt.figure()
