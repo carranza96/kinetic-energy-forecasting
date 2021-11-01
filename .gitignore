@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-results/*
+results*/*
 *.png
 *.html
 launch.json
