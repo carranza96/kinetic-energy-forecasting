@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from bokeh.io import output_file, save, show
 from bokeh.layouts import column, row
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, Select, Legend, MultiSelect, Div
+from bokeh.models import ColumnDataSource, Select, Legend, MultiSelect, Div, HoverTool
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Colorblind8
@@ -113,7 +113,11 @@ def plot_complete_test_window(
     return fig, fig_zoom
 
 
-def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, models=None):
+def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, models=None, show_all_horizons=True):
+    if show_all_horizons:
+        horizons = list(range(fh))
+    else:
+        horizons = [0, fh - 1]
 
     # Read result for the specific forecasting horizon and past history
     problem_conf = f"FH{fh}-PH{ph}"
@@ -146,7 +150,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
                 # Model not present for this dataset - Fill with NaNs
                 data[ds][model_arch]["Metric Mean"] = "None"
                 nan_pred = ["NaN" for _ in range(len(data[ds]["y"]))]
-                for i in range(fh):
+                for i in horizons:
                     data[ds][model_arch][f"t{i+1}"] = nan_pred
                     data[ds][model_arch][f"Metric t{i+1}"] = "None"
                 data[ds][model_arch]["Mean"] = nan_pred
@@ -157,7 +161,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
                 # save prediction for each timestep by forecasting horizon
                 preds = pd.read_csv(f"{results_path}/{problem_conf}/{ds}/o_{model}.csv")
-                for i in range(fh):
+                for i in horizons:
                     fh_preds = ["NaN"] * i + preds[str(i)].tolist() + ["NaN"] * (fh - i - 1)
                     data[ds][model_arch][f"t{i+1}"] = fh_preds
                     # Save metric by forecasting horizon
@@ -165,7 +169,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
                     fh_error = METRICS[metric.lower()](data[ds]["y"][i:j], preds[str(i)])
                     data[ds][model_arch][f"Metric t{i+1}"] = "{:.8f}".format(fh_error)
                 # get average prediction for each timestep
-                list_preds = [list(data[ds][model_arch][f"t{i+1}"]) for i in range(fh)]
+                list_preds = [list(data[ds][model_arch][f"t{i+1}"]) for i in horizons]
                 data[ds][model_arch]["Mean"] = [
                     np.mean([v[i] for v in list_preds if v[i] != "NaN"]) for i in range(len(data[ds]["x"]))
                 ]
@@ -189,6 +193,14 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     for i, model in enumerate(model_architetures):
         l = p.line(x=f"x", y=model, source=live_source, line_width=2, line_color=PALETTE[i + 1])
         line_ls.append(l)
+    p.add_tools(
+        HoverTool(
+            renderers=[line_y],
+            tooltips=[("date", "@x{%F %T}"), ("GT", "@y")] + [(m, f"@{m}") for m in model_architetures],
+            formatters={"@x": "datetime"},
+            mode="vline",
+        )
+    )
 
     # Create legend
     legend_labels = ["GT"] + [
@@ -201,7 +213,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
     # Create dropdown menu and add javascript logic
     dataset_select = Select(title="Dataset", value=default_dataset, options=datasets)
-    pred_horizon_select = Select(value="Mean", options=["Mean"] + [f"t{i+1}" for i in range(fh)])
+    pred_horizon_select = Select(value="Mean", options=["Mean"] + [f"t{i+1}" for i in horizons])
     model_select = MultiSelect(title="Models", value=model_architetures, options=model_architetures)
 
     callback = CustomJS(
@@ -249,7 +261,11 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
 
 def plot_best_predictions(
-    results_path: str, metric: str = "MAE", fh_ph_list: List[str] = None, models: List[str] = None
+    results_path: str,
+    metric: str = "MAE",
+    fh_ph_list: List[str] = None,
+    models: List[str] = None,
+    show_all_horizons: bool = True,
 ):
     output_file("predictions.html")
     if not fh_ph_list:
@@ -260,7 +276,7 @@ def plot_best_predictions(
             continue
         fh = int(fh_ph.split("-")[0].replace("FH", ""))
         ph = int(fh_ph.split("-")[1].replace("PH", ""))
-        tabs.append(_plot_best_predictions(results_path, fh, ph, metric, models))
+        tabs.append(_plot_best_predictions(results_path, fh, ph, metric, models, show_all_horizons))
     tabs = Tabs(tabs=tabs)
 
     title = Div(text="<h1>Kinetic Energy Forecasting</h1>", sizing_mode="stretch_width")
@@ -300,8 +316,9 @@ if __name__ == "__main__":
         zoom=(6000, 8000),
     )
     plot_best_predictions(
-        results_path="./results", 
-        metric="MAE", 
-        fh_ph_list=["FH60-PH240", "FH240-PH960"], # None or [] will take all possible options 
-        models=None # None or [] will take all models 
+        results_path="./results",
+        metric="MAE",
+        fh_ph_list=["FH60-PH240", "FH240-PH960"],  # None or [] will take all possible options
+        models=None,  # None or [] will take all models
+        show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
     )
