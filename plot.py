@@ -18,6 +18,9 @@ from bokeh.models import ColumnDataSource, Select, Legend, MultiSelect, Div, Hov
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Colorblind8
+import bokeh_catplot
+import bokeh.io
+import iqplot
 
 from experiments.utils.metrics import METRICS
 
@@ -167,7 +170,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
                     # Save metric by forecasting horizon
                     j = None if -fh + i + 1 == 0 else -fh + i + 1
                     fh_error = METRICS[metric.lower()](data[ds]["y"][i:j], preds[str(i)])
-                    data[ds][model_arch][f"Metric t{i+1}"] = "{:.8f}".format(fh_error)
+                    data[ds][model_arch][f"Metric t{i+1}"] = "{:.3f}".format(fh_error)
                 # get average prediction for each timestep
                 list_preds = [list(data[ds][model_arch][f"t{i+1}"]) for i in horizons]
                 data[ds][model_arch]["Mean"] = [
@@ -185,7 +188,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     live_source = ColumnDataSource(live_data)
 
     # Create figure
-    p = figure(title=default_dataset, width=1200, height=600, x_axis_type="datetime")
+    p = figure(title="Prediction on test (last 10 days) of " + default_dataset + " \t(Best model of each type of architecture)", width=1200, height=600, x_axis_type="datetime")
 
     # Plot lines
     line_y = p.line(x="x", y="y", source=live_source, line_width=3, line_alpha=0.7, line_color=PALETTE[0])
@@ -215,7 +218,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     dataset_select = Select(title="Dataset", value=default_dataset, options=datasets)
     pred_horizon_select = Select(value="Mean", options=["Mean"] + [f"t{i+1}" for i in horizons])
     model_select = MultiSelect(title="Models", value=model_architetures, options=model_architetures)
-
+    
     callback = CustomJS(
         args={
             "dataset_select": dataset_select,
@@ -256,9 +259,37 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     dataset_select.js_on_change("value", callback)
     pred_horizon_select.js_on_change("value", callback)
     model_select.js_on_change("value", callback)
+    
+    return row(column(dataset_select, pred_horizon_select, model_select), p)
 
-    return Panel(child=(row(column(dataset_select, pred_horizon_select, model_select), p)), title=f"FH {fh} | PH {ph}")
+def _plot_error_dist(results_path: str, fh: int, ph: int, metric: str, models=None):
+    # Read result for the specific forecasting horizon and past history
+    problem_conf = f"FH{fh}-PH{ph}"
+    results = pd.read_csv(f"{results_path}/results.csv")
+    if models:
+        results = results[results["Model architecture"].isin(models)]
+    results = expand_df(results, "Other params")
+    results = results[(results["Forecasting horizon"] == fh) & (results["Past history"] == ph)]
+    
+    p = iqplot.stripbox(data=results, 
+                        q='MAE', 
+                        cats=["Dataset","Model architecture"],
+                        title="Mean error distribution of each type of architecture", 
+                        jitter=True,
+                        q_axis='y',
+                        width=1200, 
+                        height=600,
+                        tooltips=[(metric, '@{MAE}')],
+                        box_kwargs=dict(fill_color=None, line_color='gray'),
+                        median_kwargs=dict(line_color='gray'),
+                        whisker_kwargs=dict(line_color='gray'),
+                        whisker_caps=True,
+                        )
+    
 
+    return row(p)
+
+    
 
 def plot_best_predictions(
     results_path: str,
@@ -276,7 +307,12 @@ def plot_best_predictions(
             continue
         fh = int(fh_ph.split("-")[0].replace("FH", ""))
         ph = int(fh_ph.split("-")[1].replace("PH", ""))
-        tabs.append(_plot_best_predictions(results_path, fh, ph, metric, models, show_all_horizons))
+        predictions = _plot_best_predictions(results_path, fh, ph, metric, models, show_all_horizons)
+        boxplot = _plot_error_dist(results_path, fh, ph, metric, models)
+
+        page = Panel(child=column(predictions,boxplot),  title=f"FH {fh} | PH {ph}")
+        tabs.append(page)        
+        
     tabs = Tabs(tabs=tabs)
 
     title = Div(text="<h1>Kinetic Energy Forecasting</h1>", sizing_mode="stretch_width")
@@ -286,37 +322,37 @@ def plot_best_predictions(
 
 
 if __name__ == "__main__":
-    error_plots(
-        results_path="./results",
-        model_architectures=["LinearRegression", "XGBoost"],
-        metrics=["MAE", "WAPE", "MAPE", "MSE", "RMSE"],
-        hue_key="key",
-    )
-    error_plots(
-        results_path="./results",
-        model_architectures=["LinearRegression", "XGBoost"],
-        metrics=["MAE", "WAPE", "MAPE", "MSE", "RMSE"],
-        hue_key="Model architecture",
-    )
-    plot_pred_single_instance(
-        results_path="./results",
-        forecasting_horizon=60,
-        past_history=240,
-        dataset="2020-01-KE",
-        model="XGBoost_0",
-        idx=1000,
-        metric="WAPE",
-    )
-    plot_complete_test_window(
-        results_path="./results",
-        forecasting_horizon=60,
-        past_history=240,
-        dataset="2020-01-KE",
-        models=["LinearRegression_0", "XGBoost_0"],
-        zoom=(6000, 8000),
-    )
+    # error_plots(
+    #     results_path="./results",
+    #     model_architectures=["LinearRegression", "XGBoost"],
+    #     metrics=["MAE", "WAPE", "MAPE", "MSE", "RMSE"],
+    #     hue_key="key",
+    # )
+    # error_plots(
+    #     results_path="./results",
+    #     model_architectures=["LinearRegression", "XGBoost"],
+    #     metrics=["MAE", "WAPE", "MAPE", "MSE", "RMSE"],
+    #     hue_key="Model architecture",
+    # )
+    # plot_pred_single_instance(
+    #     results_path="./results",
+    #     forecasting_horizon=60,
+    #     past_history=240,
+    #     dataset="2020-01-KE",
+    #     model="XGBoost_0",
+    #     idx=1000,
+    #     metric="WAPE",
+    # )
+    # plot_complete_test_window(
+    #     results_path="./results",
+    #     forecasting_horizon=60,
+    #     past_history=240,
+    #     dataset="2020-01-KE",
+    #     models=["LinearRegression_0", "XGBoost_0"],
+    #     zoom=(6000, 8000),
+    # )
     plot_best_predictions(
-        results_path="./results",
+        results_path="./results3",
         metric="MAE",
         fh_ph_list=["FH60-PH240", "FH240-PH960"],  # None or [] will take all possible options
         models=None,  # None or [] will take all models
