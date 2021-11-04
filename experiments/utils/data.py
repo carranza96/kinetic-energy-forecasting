@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Union, List
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -10,14 +11,17 @@ VALUE_COL = "Value"
 COLUMNS = [INDEX_COL, VALUE_COL]
 
 
-def read_dataframe(filename):
-    df = pd.read_csv(filename)
+def read_dataframe(filename: Union[str, List[str]]):
+    if type(filename) is list:
+        df = pd.concatenate([pd.read_csv(fn) for fn in filename])
+    else:
+        df = pd.read_csv(filename)
     df = df[RAW_COLUMNS]
     df.columns = COLUMNS
     df[VALUE_COL] = df[VALUE_COL].astype("float")
     df[INDEX_COL] = pd.to_datetime(df[INDEX_COL])
     df.index = df.pop(INDEX_COL)
-    df[df[VALUE_COL]==0.] = np.nan
+    df[df[VALUE_COL] == 0.0] = np.nan
     df = df.dropna()
     return df
 
@@ -60,7 +64,12 @@ def split_train_test(df, end_date=None, n_days_test=10):
 
 
 def scale_features(
-    df_, scaler="MinMaxScaler", end_date=None, n_days_test=10, fit_scaler=True, value_column=VALUE_COL
+    df_,
+    scaler="MinMaxScaler",
+    end_date=None,
+    n_days_test=10,
+    fit_scaler=True,
+    value_column=VALUE_COL,
 ):
     df = df_.copy()
 
