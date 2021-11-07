@@ -18,8 +18,6 @@ from bokeh.models import ColumnDataSource, Select, Legend, MultiSelect, Div, Hov
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.models.callbacks import CustomJS
 from bokeh.palettes import Colorblind8
-import bokeh_catplot
-import bokeh.io
 import iqplot
 
 from experiments.utils.metrics import METRICS
@@ -279,7 +277,7 @@ def _plot_error_dist(results_path: str, fh: int, ph: int, metric: str, models=No
                         q_axis='y',
                         width=1200, 
                         height=600,
-                        tooltips=[(metric, '@{MAE}')],
+                        tooltips=[(metric, '@{MAE}'), ('Model', '@{Model}'), ('Model params', '@{Model params}')],
                         box_kwargs=dict(fill_color=None, line_color='gray'),
                         median_kwargs=dict(line_color='gray'),
                         whisker_kwargs=dict(line_color='gray'),
@@ -352,7 +350,7 @@ if __name__ == "__main__":
     #     zoom=(6000, 8000),
     # )
     plot_best_predictions(
-        results_path="./results3",
+        results_path="./results",
         metric="MAE",
         fh_ph_list=["FH60-PH240", "FH240-PH960"],  # None or [] will take all possible options
         models=None,  # None or [] will take all models
