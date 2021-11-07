@@ -97,12 +97,12 @@ MODELS = {
 }
 
 
-def preprocess_data(df_, freq, past_history, forecasting_horizon, n_days_test):
+def preprocess_data(df_, freq, past_history, forecasting_horizon, n_days_test, train_lag=1):
     df = df_.copy()
     end_date = df.index.max()
     df = data.transform_to_evenly_spaced(df, freq=freq)
     df, scaler = data.scale_features(df, scaler=SCALER, fit_scaler=FIT_SCALER, n_days_test=n_days_test)
-    df = data.build_features(df, past_history=past_history, forecasting_horizon=forecasting_horizon)
+    df = data.build_features(df, past_history=past_history, forecasting_horizon=forecasting_horizon, train_lag=train_lag)
     df_train, df_test = data.split_train_test(df, end_date=end_date, n_days_test=n_days_test)
     X_train, y_train = data.split_input_output(df_train)
     X_test, y_test = data.split_input_output(df_test)
