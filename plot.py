@@ -114,14 +114,7 @@ def plot_complete_test_window(
     return fig, fig_zoom
 
 
-def _plot_best_predictions_by_forecasting_horizon(
-    results_path: str, fh: int, ph: int, metric: str, models=None, show_all_horizons=True
-):
-    if show_all_horizons:
-        horizons = list(range(fh))
-    else:
-        horizons = [0, fh - 1]
-
+def _plot_best_predictions_by_forecasting_horizon(results_path: str, fh: int, ph: int, metric: str, models=None):
     # Read result for the specific forecasting horizon and past history
     problem_conf = f"FH{fh}-PH{ph}"
     results = pd.read_csv(f"{results_path}/results.csv")
@@ -456,9 +449,7 @@ def plot_best_predictions(
         ph = int(fh_ph.split("-")[1].replace("PH", ""))
         predictions = _plot_best_predictions(results_path, fh, ph, metric, models, show_all_horizons)
         boxplot = _plot_error_dist(results_path, fh, ph, metric, models)
-        error_fh = _plot_best_predictions_by_forecasting_horizon(
-            results_path, fh, ph, metric, models, show_all_horizons
-        )
+        error_fh = _plot_best_predictions_by_forecasting_horizon(results_path, fh, ph, metric, models)
 
         page = Panel(child=column(predictions, error_fh, boxplot), title=f"FH {fh} | PH {ph}")
         tabs.append(page)

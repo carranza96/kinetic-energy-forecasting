@@ -97,12 +97,12 @@ MODELS = {
 }
 
 
-def preprocess_data(df_, freq, past_history, forecasting_horizon, n_days_test, train_lag=1):
+def preprocess_data(df_, freq, past_history, forecasting_horizon, n_days_test, train_lag=1, test_lag=1):
     df = df_.copy()
     end_date = df.index.max()
     df = data.transform_to_evenly_spaced(df, freq=freq)
     df, scaler = data.scale_features(df, scaler=SCALER, fit_scaler=FIT_SCALER, n_days_test=n_days_test)
-    df = data.build_features(df, past_history=past_history, forecasting_horizon=forecasting_horizon, train_lag=train_lag)
+    df = data.build_features(df, past_history=past_history, forecasting_horizon=forecasting_horizon, train_lag=train_lag, test_lag=test_lag)
     df_train, df_test = data.split_train_test(df, end_date=end_date, n_days_test=n_days_test)
     X_train, y_train = data.split_input_output(df_train)
     X_test, y_test = data.split_input_output(df_test)
@@ -180,7 +180,7 @@ def save_results(
     results.to_csv(f"{output_path}/results.csv", index=False, float_format="%.8f")
 
 
-def main(data_path, output_path, past_history, forecasting_horizon, freq, n_days_test):
+def main(data_path, output_path, past_history, forecasting_horizon, freq, n_days_test, train_lag, test_lag):
     files = sorted(os.listdir(data_path))
 
     for filename in files:
@@ -189,7 +189,7 @@ def main(data_path, output_path, past_history, forecasting_horizon, freq, n_days
 
         df = data.read_dataframe(f"{data_path}/{filename}")
         X_train, y_train, X_test, y_test, scaler, test_index = preprocess_data(
-            df, freq, past_history, forecasting_horizon, n_days_test
+            df, freq, past_history, forecasting_horizon, n_days_test, train_lag, test_lag
         )
 
         for model_func in MODELS:
@@ -250,6 +250,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--past-history", dest="past_history", type=int, default=240)
     parser.add_argument("-t", "--days-test", dest="n_days_test", type=int, default=10)
     parser.add_argument("-q", "--frequency", dest="freq", type=str, default="1min")
+    parser.add_argument("-x", "--train-lag", dest="train_lag", type=int, default=1)
+    parser.add_argument("-y", "--test-lag", dest="test_lag", type=int, default=1)
 
     args = parser.parse_args()
 
@@ -260,4 +262,6 @@ if __name__ == "__main__":
         forecasting_horizon=args.forecasting_horizon,
         freq=args.freq,
         n_days_test=args.n_days_test,
+        train_lag=args.train_lag,
+        test_lag=args.test_lag
     )
