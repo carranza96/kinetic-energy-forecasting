@@ -397,7 +397,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
         }
 
-        title.text = "Prediction on test (last 10 days) of " + ataset_select.value + " \t(Best model of each type of architecture)";
+        title.text = "Prediction on test (last 10 days) of " + dataset_select.value + " \t(Best model of each type of architecture)";
         live_source.change.emit();
         """,
     )
@@ -440,12 +440,13 @@ def _plot_error_dist(results_path: str, fh: int, ph: int, metric: str, models=No
 
 def plot_best_predictions(
     results_path: str,
+    out_file: str = "predictions.html",
     metric: str = "MAE",
     fh_ph_list: List[str] = None,
     models: List[str] = None,
     show_all_horizons: bool = True,
 ):
-    output_file("predictions.html")
+    output_file(out_file)
     if not fh_ph_list:
         fh_ph_list = sorted(os.listdir(results_path))
     tabs = []
@@ -501,10 +502,30 @@ if __name__ == "__main__":
     #     models=["LinearRegression_0", "XGBoost_0"],
     #     zoom=(6000, 8000),
     # )
+    # plot_best_predictions(
+    #     results_path="./results3",
+    #     out_file="predictions_freq1min_20daystrain_10daystest.html",
+    #     metric="MAE",
+    #     fh_ph_list=["FH60-PH240", "FH240-PH960", "FH240-PH1440", "FH240-PH1920"],  # None or [] will take all possible options
+    #     models=None,  # None or [] will take all models
+    #     show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
+    # )
+    
+    # plot_best_predictions(
+    #     results_path="./results_moretrain",
+    #     out_file="predictions_freq1min_2monthstrain_10daystest.html",
+    #     metric="MAE",
+    #     fh_ph_list=["FH240-PH1440"],  # None or [] will take all possible options
+    #     models=None,  # None or [] will take all models
+    #     show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
+    # )
+    
     plot_best_predictions(
         results_path="./results",
+        out_file="predictions_freq15min_2monthstrain_10daystest.html",
         metric="MAE",
-        fh_ph_list=["FH60-PH240", "FH240-PH960"],  # None or [] will take all possible options
+        fh_ph_list=["FH96-PH384"],  # None or [] will take all possible options
         models=None,  # None or [] will take all models
         show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
     )
+
