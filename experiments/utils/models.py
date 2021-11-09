@@ -43,11 +43,11 @@ class Model(ABC):
             self._model is not None
         ), "Model has not been built, please call set_params function before training or predicting."
 
-    def fit(self, x_, y):
+    def fit(self, x_, y, **args):
         self.assert_model_built()
         x = np.expand_dims(x_, axis=-1)
         print(x.shape)
-        loss = self._model.fit(x, y, batch_size=self._batch_size, epochs=self._epochs)
+        loss = self._model.fit(x, y, batch_size=self._batch_size, epochs=self._epochs, **args)
         return loss
 
     def predict(self, x_):
