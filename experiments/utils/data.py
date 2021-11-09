@@ -31,10 +31,10 @@ def transform_to_evenly_spaced(df, freq="1min", method="backfill"):
     return df
 
 
-def _build_past_history_features(df_, past_history, value_column):
+def _build_past_history_features(df_, past_history, value_column, train_lag=1):
     df = df_.copy()
     for i in range(past_history, 0, -1):
-        df[f"X_{i}"] = df[value_column].shift(i)
+        df[f"X_{i}"] = df[value_column].shift(i*train_lag)
     return df
 
 
@@ -45,9 +45,9 @@ def _build_forecasting_horizon_features(df_, forecasting_horizon, value_column):
     return df
 
 
-def build_features(df_, past_history, forecasting_horizon, value_column=VALUE_COL):
+def build_features(df_, past_history, forecasting_horizon, value_column=VALUE_COL, train_lag=1):
     df = df_.copy()
-    df = _build_past_history_features(df, past_history, value_column)
+    df = _build_past_history_features(df, past_history, value_column, train_lag)
     df = _build_forecasting_horizon_features(df, forecasting_horizon, value_column)
     df = df.drop(value_column, axis=1)
     df = df.dropna()

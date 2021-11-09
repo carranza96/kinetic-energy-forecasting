@@ -114,6 +114,147 @@ def plot_complete_test_window(
     return fig, fig_zoom
 
 
+def _plot_best_predictions_by_forecasting_horizon(
+    results_path: str, fh: int, ph: int, metric: str, models=None, show_all_horizons=True
+):
+    if show_all_horizons:
+        horizons = list(range(fh))
+    else:
+        horizons = [0, fh - 1]
+
+    # Read result for the specific forecasting horizon and past history
+    problem_conf = f"FH{fh}-PH{ph}"
+    results = pd.read_csv(f"{results_path}/results.csv")
+    if models:
+        results = results[results["Model architecture"].isin(models)]
+    results = expand_df(results, "Other params")
+    results = results[(results["Forecasting horizon"] == fh) & (results["Past history"] == ph)]
+
+    # get best model for each architecture-dataset
+    results = results.sort_values(metric, ascending=True).drop_duplicates(["Dataset", "Model architecture"])
+
+    datasets = sorted(list(results["Dataset"].unique()))
+    model_architetures = sorted(list(results["Model architecture"].unique()))
+
+    # Prepare data
+    data = defaultdict(dict)
+    for ds in datasets:
+        y = pd.read_csv(f"{results_path}/{problem_conf}/{ds}/y.csv").drop("Datetime", axis=1).values
+        for model_arch in model_architetures:
+            filtered_result = results[
+                (results["Dataset"] == ds) & (results["Model architecture"] == model_arch)
+            ].copy()
+            if not len(filtered_result):
+                data[ds][f"{model_arch} mean"] = ["NaN"] * fh
+                data[ds][model_arch] = ["NaN"] * fh
+            else:
+                model = filtered_result["Model"].values[0]
+                preds = (
+                    pd.read_csv(f"{results_path}/{problem_conf}/{ds}/o_{model}.csv").drop("Datetime", axis=1).values
+                )
+                # Save mean error value
+                data[ds][f"{model_arch} mean"] = [METRICS[metric.lower()](y, preds)] * fh
+                # save error for each forecasting horizon
+                data[ds][model_arch] = [METRICS[metric.lower()](y[:, i], preds[:, i]) for i in range(fh)]
+
+    # Prepare data for current view of the plot.
+    default_dataset = sorted(list(data.keys()))[0]
+
+    live_data = data[default_dataset].copy()
+    live_data["x"] = list(range(fh))
+    live_source = ColumnDataSource(live_data)
+
+    # Create figure
+    p = figure(
+        title="Error for each prediction horizon of "
+        + default_dataset
+        + " \t(Best model of each type of architecture)",
+        width=1200,
+        height=600,
+    )
+    p.yaxis.axis_label = metric
+    p.xaxis.axis_label = "Forecasting horizon"
+    # Plot lines
+    line_ls = []
+    for i, model in enumerate(model_architetures):
+        l_mean = p.line(
+            x="x",
+            y=f"{model} mean",
+            source=live_source,
+            line_width=2,
+            line_color=PALETTE[i + 1],
+            line_dash="dotted",
+            line_alpha=0.8,
+        )
+        l = p.line(x="x", y=model, source=live_source, line_width=2, line_color=PALETTE[i + 1], legend_label=model)
+        c = p.circle(x="x", y=model, source=live_source, color=PALETTE[i + 1])
+        p.add_tools(
+            HoverTool(
+                description=f"{model} hover",
+                renderers=[c],
+                tooltips=[
+                    ("Model", model),
+                    ("FH", "@x"),
+                    (metric, f"@{model}"),
+                    (f"Mean {metric}", f"@{{{model} mean}}"),
+                ],
+            )
+        )
+        line_ls.append([l, l_mean, c])
+
+    l = p.line(x=list(range(fh)), y=[0] * fh, line_color="black", line_dash="dotted", legend_label="Mean avg.")
+    l.visible = False
+
+    p.add_layout(p.legend[0], "right")
+
+    # Create dropdown menu and add javascript logic
+    dataset_select = Select(title="Dataset", value=default_dataset, options=datasets)
+    model_select = MultiSelect(title="Models", value=model_architetures, options=model_architetures)
+
+    callback = CustomJS(
+        args={
+            "dataset_select": dataset_select,
+            "model_select": model_select,
+            "data": data,
+            "live_source": live_source,
+            "title": p.title,
+            "models": model_architetures,
+            "model_lines": line_ls,
+        },
+        code="""
+        console.log(data)
+        console.log(live_source.data)
+        console.log(dataset_select.value)
+        console.log(model_select.value)
+        const live_data = live_source.data;
+
+        for (let i = 0; i < models.length; i++) {
+            live_data[models[i]] = data[dataset_select.value][models[i]];
+            live_data[models[i] + ' mean'] = data[dataset_select.value][models[i] + ' mean'];
+            
+            if (model_select.value.includes(models[i])){
+                model_lines[i][0].visible = true;
+                model_lines[i][1].visible = true;
+                model_lines[i][2].visible = true;
+            } else{ 
+                model_lines[i][0].visible = false;
+                model_lines[i][1].visible = false;
+                model_lines[i][2].visible = false;
+            }
+
+        }
+
+        title.text = "Error for each prediction horizon of " + dataset_select.value + " \t(Best model of each type of architecture)";
+        live_source.change.emit();
+        """,
+    )
+
+    dataset_select.js_on_change("value", callback)
+    model_select.js_on_change("value", callback)
+
+    return row(column(dataset_select, model_select), p)
+
+
 def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, models=None, show_all_horizons=True):
     if show_all_horizons:
         horizons = list(range(fh))
@@ -186,7 +327,14 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     live_source = ColumnDataSource(live_data)
 
     # Create figure
-    p = figure(title="Prediction on test (last 10 days) of " + default_dataset + " \t(Best model of each type of architecture)", width=1200, height=600, x_axis_type="datetime")
+    p = figure(
+        title="Prediction on test (last 10 days) of "
+        + default_dataset
+        + " \t(Best model of each type of architecture)",
+        width=1200,
+        height=600,
+        x_axis_type="datetime",
+    )
 
     # Plot lines
     line_y = p.line(x="x", y="y", source=live_source, line_width=3, line_alpha=0.7, line_color=PALETTE[0])
@@ -216,7 +364,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     dataset_select = Select(title="Dataset", value=default_dataset, options=datasets)
     pred_horizon_select = Select(value="Mean", options=["Mean"] + [f"t{i+1}" for i in horizons])
     model_select = MultiSelect(title="Models", value=model_architetures, options=model_architetures)
-    
+
     callback = CustomJS(
         args={
             "dataset_select": dataset_select,
@@ -249,7 +397,7 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
 
         }
 
-        title.text = dataset_select.value;
+        title.text = "Prediction on test (last 10 days) of " + ataset_select.value + " \t(Best model of each type of architecture)";
         live_source.change.emit();
         """,
     )
@@ -257,8 +405,9 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
     dataset_select.js_on_change("value", callback)
     pred_horizon_select.js_on_change("value", callback)
     model_select.js_on_change("value", callback)
-    
+
     return row(column(dataset_select, pred_horizon_select, model_select), p)
+
 
 def _plot_error_dist(results_path: str, fh: int, ph: int, metric: str, models=None):
     # Read result for the specific forecasting horizon and past history
@@ -268,26 +417,26 @@ def _plot_error_dist(results_path: str, fh: int, ph: int, metric: str, models=No
         results = results[results["Model architecture"].isin(models)]
     results = expand_df(results, "Other params")
     results = results[(results["Forecasting horizon"] == fh) & (results["Past history"] == ph)]
-    
-    p = iqplot.stripbox(data=results, 
-                        q='MAE', 
-                        cats=["Dataset","Model architecture"],
-                        title="Mean error distribution of each type of architecture", 
-                        jitter=True,
-                        q_axis='y',
-                        width=1200, 
-                        height=600,
-                        tooltips=[(metric, '@{MAE}'), ('Model', '@{Model}'), ('Model params', '@{Model params}')],
-                        box_kwargs=dict(fill_color=None, line_color='gray'),
-                        median_kwargs=dict(line_color='gray'),
-                        whisker_kwargs=dict(line_color='gray'),
-                        whisker_caps=True,
-                        )
-    
+
+    p = iqplot.stripbox(
+        data=results,
+        q="MAE",
+        cats=["Dataset", "Model architecture"],
+        title="Mean error distribution of each type of architecture",
+        jitter=True,
+        q_axis="y",
+        width=1200,
+        height=600,
+        tooltips=[(metric, "@{MAE}"), ("Model", "@{Model}"), ("Model params", "@{Model params}")],
+        box_kwargs=dict(fill_color=None, line_color="gray"),
+        median_kwargs=dict(line_color="gray"),
+        whisker_kwargs=dict(line_color="gray"),
+        whisker_caps=True,
+        toolbar_location="right",
+    )
 
     return row(p)
 
-    
 
 def plot_best_predictions(
     results_path: str,
@@ -307,10 +456,13 @@ def plot_best_predictions(
         ph = int(fh_ph.split("-")[1].replace("PH", ""))
         predictions = _plot_best_predictions(results_path, fh, ph, metric, models, show_all_horizons)
         boxplot = _plot_error_dist(results_path, fh, ph, metric, models)
+        error_fh = _plot_best_predictions_by_forecasting_horizon(
+            results_path, fh, ph, metric, models, show_all_horizons
+        )
 
-        page = Panel(child=column(predictions,boxplot),  title=f"FH {fh} | PH {ph}")
-        tabs.append(page)        
-        
+        page = Panel(child=column(predictions, error_fh, boxplot), title=f"FH {fh} | PH {ph}")
+        tabs.append(page)
+
     tabs = Tabs(tabs=tabs)
 
     title = Div(text="<h1>Kinetic Energy Forecasting</h1>", sizing_mode="stretch_width")
