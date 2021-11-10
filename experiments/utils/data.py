@@ -10,6 +10,8 @@ INDEX_COL = "Datetime"
 VALUE_COL = "Value"
 COLUMNS = [INDEX_COL, VALUE_COL]
 
+FEATURES_METHODS = {"mean", "sum"}
+
 
 def read_dataframe(filename: Union[str, List[str]]):
     if type(filename) is list:
@@ -26,22 +28,35 @@ def read_dataframe(filename: Union[str, List[str]]):
     return df
 
 
-def transform_to_evenly_spaced(df, freq="1min", method="backfill"):
+def transform_to_evenly_spaced(df_, freq="1min", method="backfill"):
+    df = df_.copy()
     df = df.asfreq(freq, method=method)
+    return df
+
+
+def preprocess_time_series(df_, rolling_method="sum", rolling_window=1):
+    assert (
+        rolling_method in FEATURES_METHODS
+    ), f"Rolling method not valid, it should be one of the following option {FEATURES_METHODS}"
+    df = df_.copy()
+    if rolling_method == "sum":
+        df = df.rolling(rolling_window).sum()
+    elif rolling_method == "mean":
+        df = df.rolling(rolling_window).mean()
     return df
 
 
 def _build_past_history_features(df_, past_history, value_column, train_lag=1):
     df = df_.copy()
     for i in range(past_history, 0, -1):
-        df[f"X_{i}"] = df[value_column].shift(i*train_lag)
+        df[f"X_{i}"] = df[value_column].shift(i * train_lag)
     return df
 
 
 def _build_forecasting_horizon_features(df_, forecasting_horizon, value_column, test_lag=1):
     df = df_.copy()
     for i in range(forecasting_horizon):
-        df[f"y_{i}"] = df[value_column].shift(-i*test_lag)
+        df[f"y_{i}"] = df[value_column].shift(-i * test_lag)
     return df
 
 
