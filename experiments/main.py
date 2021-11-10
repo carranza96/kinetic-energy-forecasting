@@ -19,8 +19,9 @@ FIT_SCALER = False
 # Model parameters
 N_JOBS = -1
 BATCH_SIZE = [64, 256]
-EPOCHS = [1, 10, 50]
+EPOCHS = [10, 50]
 MODELS = {
+    LinearRegression: {"n_jobs": [N_JOBS]},
     MLP: {
         "hidden_layers": [
                 [8],
@@ -77,23 +78,22 @@ MODELS = {
         "batch_size": BATCH_SIZE,
         "epochs": EPOCHS,
     },
-    LinearRegression: {"n_jobs": [N_JOBS]},
-    XGBoost: {
-        "estimator__learning_rate": [0.05, 0.10, 0.25],
-        "estimator__max_depth": [3, 10],
-        "estimator__min_child_weight": [1, 5],
-        "estimator__gamma": [0.1, 0.4],
-        "estimator__colsample_bytree": [0.3, 0.7],
-        "estimator__n_jobs": [N_JOBS],
-    },
-    RandomForest: {
-        "n_estimators": [100, 500],
-        "max_depth": [10, 100, None],
-        "min_samples_split": [2, 10],
-        "min_samples_leaf": [1, 4],
-        "bootstrap": [True, False],
-        "n_jobs": [N_JOBS],
-    }
+    # XGBoost: {
+    #     "estimator__learning_rate": [0.05, 0.10, 0.25],
+    #     "estimator__max_depth": [3, 10],
+    #     "estimator__min_child_weight": [1, 5],
+    #     "estimator__gamma": [0.1, 0.4],
+    #     "estimator__colsample_bytree": [0.3, 0.7],
+    #     "estimator__n_jobs": [N_JOBS],
+    # },
+    # RandomForest: {
+    #     "n_estimators": [100, 500],
+    #     "max_depth": [10, 100, None],
+    #     "min_samples_split": [2, 10],
+    #     "min_samples_leaf": [1, 4],
+    #     "bootstrap": [True, False],
+    #     "n_jobs": [N_JOBS],
+    # }
 }
 
 
