@@ -132,3 +132,7 @@ results*/*
 *.png
 *.html
 launch.json
+
+*.csv
+*.joblib
+*.h5

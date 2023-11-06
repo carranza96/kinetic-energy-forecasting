@@ -124,6 +124,13 @@ class LSTM(Model):
         x = tf.keras.layers.Dense(output_size)(x)
 
         model = tf.keras.Model(inputs=inputs, outputs=x)
+        
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=1e-3,
+        decay_steps=1000,
+        decay_rate=0.96)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule) 
+
         model.compile(optimizer=optimizer, loss=loss)
 
         return model
@@ -150,8 +157,9 @@ class CNN(Model):
         assert 0 <= dense_dropout <= 1
         inputs = tf.keras.layers.Input(shape=input_shape[-2:])
         # First conv block
+        ## TODO: Check if is better with/without ReLU
         x = tf.keras.layers.Conv1D(
-            conv_layers[0], kernel_sizes[0], activation="relu", padding="same"
+            conv_layers[0], kernel_sizes[0], activation=None, padding="same"
         )(inputs)
         if pool_sizes[0] and x.shape[-2] // pool_sizes[0] > 1:
             x = tf.keras.layers.MaxPool1D(pool_size=pool_sizes[0])(x)
@@ -160,7 +168,7 @@ class CNN(Model):
             conv_layers[1:], kernel_sizes[1:], pool_sizes[1:]
         ):
             x = tf.keras.layers.Conv1D(
-                chanels, kernel_size, activation="relu", padding="same"
+                chanels, kernel_size, activation=None, padding="same"
             )(x)
             if pool_size and x.shape[-2] // pool_size > 1:
                 x = tf.keras.layers.MaxPool1D(pool_size=pool_size)(x)
@@ -172,6 +180,12 @@ class CNN(Model):
                 tf.keras.layers.Dropout(dense_dropout)(x)
         x = tf.keras.layers.Dense(output_size)(x)
 
+        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+        initial_learning_rate=1e-3,
+        decay_steps=1000,
+        decay_rate=0.96)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=lr_schedule) 
+        
         model = tf.keras.Model(inputs=inputs, outputs=x)
         model.compile(optimizer=optimizer, loss=loss)
         return model

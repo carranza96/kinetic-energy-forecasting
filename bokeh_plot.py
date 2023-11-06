@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import numpy as np
 from typing import Tuple, List
+import matplotlib.dates as mdates
 
 import seaborn as sns
 import matplotlib
@@ -309,6 +310,32 @@ def _plot_best_predictions(results_path: str, fh: int, ph: int, metric: str, mod
                     np.mean([v[i] for v in list_preds if v[i] != "NaN"]) for i in range(len(data[ds]["x"]))
                 ]
 
+    
+    all_res = []
+    for ds in datasets:
+        res = [ds]
+        for model in models:
+            mean = data[ds][model]["Metric Mean"]
+            res.append(mean)
+            for i in horizons:
+                res.append(data[ds][model][f"Metric t{i+1}"])
+        all_res.append(res)
+    pd.DataFrame(all_res).to_csv("fh{}_ph{}.csv".format(fh,ph), index=False)            
+    
+    ## TODO
+    # j = 6000
+    # x = data['Oct19-Sep20-Oct20-Dic20_F1Last']['x'][j:20160+j]
+    # y = data['Oct19-Sep20-Oct20-Dic20_F1Last']['y'][j:20160+j]
+    # lr = data['Oct19-Sep20-Oct20-Dic20_F1Last']['LinearRegression']['Mean'][j:20160+j]
+    # fig, ax = plt.subplots()
+    # plt.plot(x,y, label='Real')
+    # plt.plot(x, lr, label='Predicted')
+    # plt.xlabel('Time')
+    # plt.ylabel('Kinetic Energy (GW.s) ')  
+    # ax.xaxis.set_major_locator(mdates.DayLocator(interval=4))   
+    # plt.legend()
+    # plt.savefig("predstMEAN.png", bbox_inches='tight')
+
     # Prepare data for current view of the plot.
     default_dataset = sorted(list(data.keys()))[0]
     default_pred_horizon = "Mean"
@@ -493,30 +520,13 @@ if __name__ == "__main__":
     #     models=["LinearRegression_0", "XGBoost_0"],
     #     zoom=(6000, 8000),
     # )
-    # plot_best_predictions(
-    #     results_path="./results3",
-    #     out_file="predictions_freq1min_20daystrain_10daystest.html",
-    #     metric="MAE",
-    #     fh_ph_list=["FH60-PH240", "FH240-PH960", "FH240-PH1440", "FH240-PH1920"],  # None or [] will take all possible options
-    #     models=None,  # None or [] will take all models
-    #     show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
-    # )
-    
-    # plot_best_predictions(
-    #     results_path="./results_moretrain",
-    #     out_file="predictions_freq1min_2monthstrain_10daystest.html",
-    #     metric="MAE",
-    #     fh_ph_list=["FH240-PH1440"],  # None or [] will take all possible options
-    #     models=None,  # None or [] will take all models
-    #     show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
-    # )
     
     plot_best_predictions(
         results_path="./results",
-        out_file="predictions_freq15min_2monthstrain_10daystest.html",
+        out_file="final_LR_LSTM.html",
         metric="MAE",
-        fh_ph_list=["FH96-PH384"],  # None or [] will take all possible options
-        models=None,  # None or [] will take all models
+        fh_ph_list=[],#["FH96-PH384"],  # None or [] will take all possible options
+        models=[],  # None or [] will take all models
         show_all_horizons=False,  # If False, plot only mean, t1 and t{fh}
     )
 
