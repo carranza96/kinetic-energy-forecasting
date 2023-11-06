@@ -16,15 +16,16 @@ Regression (LR) is the most suitable method for a time horizon of one hour due t
 Long Short-Term Memory (LSTM) is the most accurate for a forecasting horizon of four hours. Experimental assessment has been
 carried out using Typhoon HIL-404 simulator, verifying that both algorithms are suitable for real-time simulation.
 
-
+![historical data](figures/historic.png)
+![predictions](figures/predsMean.png)
 
 #### Single experiment with LR or LSTM model
 
-A useful script is provided in [experiments/keforecasting.py](#experiments/keforecasting.py) that allows reproducing the results obtained in our work.
+A useful script is provided in [experiments/keforecasting.py](experiments/keforecasting.py) that allows reproducing the results obtained in our work.
 This script includes all the steps to reproduce the proposed methodology: preprocessing steps (train/test data split, data normalization, etc.), the model and hyper-parameter selection (LSTM or LinearRegression model, past history window, forecasting horizon, etc.), and the reporting of the evaluation metric. It also includes
 useful functions for plotting the predictions.
 
 
 #### Grid search
 
-The grid search study can be conducted using the provided [run.sh](#run.sh) script, which uses the [experiments/main.py](#experiments/main.py) script with different configurations for forecasting horizon and past history window.
+The grid search study can be conducted using the provided [run.sh](run.sh) script, which uses the [experiments/main.py](experiments/main.py) script with different configurations for forecasting horizon and past history window.
