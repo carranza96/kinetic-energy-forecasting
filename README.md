@@ -14,8 +14,7 @@ Regression (LR) is the most suitable method for a time horizon of one hour due t
 Long Short-Term Memory (LSTM) is the most accurate for a forecasting horizon of four hours. Experimental assessment has been
 carried out using Typhoon HIL-404 simulator, verifying that both algorithms are suitable for real-time simulation.
 
-<img src='figures/historic.png' width='300'>
-<img src='figures/predsMean.png' width='300'>
+<img src='figures/historic.png' width='400'><img src='figures/predsMean.png' width='400'>
 
 ### Single experiment with LR or LSTM model
 
@@ -30,7 +29,7 @@ The grid search study can be conducted using the provided [run.sh](run.sh) scrip
 
 ### Results
 
-The results obtained in our experimental study are provided in the [results](#results/) folder
+The results obtained in our experimental study are provided in the [results](#results/) folder.
 
 ### Citation <a name="citation"></a>
 
