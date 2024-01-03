@@ -36,12 +36,15 @@ The results obtained in our experimental study are provided in the [results](#re
 If you use this code in your research, please cite this research article.
 
 ```
-@article{RiquelmeJM:2023,
-  title   = {{A Machine Learning-Based Methodology for Short-Term Kinetic Energy Forecasting with Real-Time Application: Nordic
-Power System Case}},
-  author  = {Jose Miguel Riquelme-Dominguez, Manuel Carranza-García, Pedro Lara-Benítez, Francisco M. Gonz ́alez-Longat},
-  journal= {Under review},
-  year={2023}
+@article{RiquelmeJM:2024,
+title = {A machine learning-based methodology for short-term kinetic energy forecasting with real-time application: Nordic Power System case},
+journal = {International Journal of Electrical Power & Energy Systems},
+volume = {156},
+pages = {109730},
+year = {2024},
+issn = {0142-0615},
+doi = {https://doi.org/10.1016/j.ijepes.2023.109730},
+author = {Jose Miguel Riquelme-Dominguez and Manuel Carranza-García and Pedro Lara-Benítez and Francisco M. González-Longatt},
 }
 ```
 
